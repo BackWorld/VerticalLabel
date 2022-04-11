@@ -7,7 +7,7 @@
 
 import UIKit
 
-class VerticalLabel: UIView {
+public class VerticalLabel: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setNeedsUpdate()
@@ -15,7 +15,7 @@ class VerticalLabel: UIView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
-    override func awakeFromNib() {
+    public override func awakeFromNib() {
         super.awakeFromNib()
         setNeedsUpdate()
     }
@@ -24,58 +24,76 @@ class VerticalLabel: UIView {
         return bounds.size
     }
     
-    @IBInspectable var text: String? {
+    @IBInspectable public var text: String? {
         didSet{
             setNeedsUpdate()
         }
     }
-    @IBInspectable lazy var textColor: UIColor = .label {
+    @IBInspectable public lazy var textColor: UIColor = .black {
         didSet{
             setNeedsUpdate()
         }
     }
-    @IBInspectable lazy var font: UIFont = .systemFont(ofSize: 24) {
-        didSet{
-            setNeedsUpdate()
-        }
-    }
-    @IBInspectable var wordSpacing: CGFloat = 1 {
+    @IBInspectable public var wordSpacing: CGFloat = 1 {
         didSet{
             wordSpacing = min(5, max(1, wordSpacing))
             setNeedsUpdate()
         }
     }
-    @IBInspectable var limitedLines: Int = 0 {
+    @IBInspectable public var limitedLines: Int = 0 {
         didSet{
             setNeedsUpdate()
         }
     }
-    @IBInspectable var lineSpacing: CGFloat = 0 {
+    @IBInspectable public var lineSpacing: CGFloat = 0 {
         didSet{
             setNeedsUpdate()
         }
     }
-    var breaking: BreakingMode = .truncate {
+    @IBInspectable var fontName: String = "" {
+        didSet{
+            font = fontWithNameSize()
+        }
+    }
+    @IBInspectable var fontSize: CGFloat = 16 {
+        didSet{
+            font = fontWithNameSize()
+        }
+    }
+    func fontWithNameSize() -> UIFont {
+        guard !fontName.isEmpty,
+              let font = UIFont(name: fontName, size: fontSize) else {
+            return .systemFont(ofSize: fontSize)
+        }
+        return font
+    }
+    
+    public lazy var font: UIFont = fontWithNameSize() {
         didSet{
             setNeedsUpdate()
         }
     }
-    var layoutDirection: DisplayDirection = .leftToRight {
+    public var breaking: BreakingMode = .truncate {
         didSet{
             setNeedsUpdate()
         }
     }
-    var xPosition: XPosition = .left {
+    public var layoutDirection: DisplayDirection = .leftToRight {
         didSet{
             setNeedsUpdate()
         }
     }
-    var yPosition: YPosition = .top {
+    public var xPosition: XPosition = .left {
         didSet{
             setNeedsUpdate()
         }
     }
-    var lineAlignment: LineAlignment = .top {
+    public var yPosition: YPosition = .top {
+        didSet{
+            setNeedsUpdate()
+        }
+    }
+    public var lineAlignment: LineAlignment = .top {
         didSet{
             setNeedsUpdate()
         }
@@ -96,21 +114,20 @@ class VerticalLabel: UIView {
         addSubview(view)
         return view
     }()
-    
     private var drawLabel: UILabel {
         tmpLabel.font = font
         tmpLabel.textColor = textColor
         return tmpLabel
     }
     
-    override func layoutSubviews() {
+    public override func layoutSubviews() {
         super.layoutSubviews()
         
         setNeedsUpdate()
     }
 }
 
-extension VerticalLabel {
+public extension VerticalLabel {
     @IBInspectable var breakingMode: Int {
         set{
             guard let value = BreakingMode(rawValue: newValue) else {
@@ -168,7 +185,7 @@ extension VerticalLabel {
     }
 }
 
-extension VerticalLabel {
+public extension VerticalLabel {
     func setNeedsUpdate() {
         calculating()
         drawingTexts()
@@ -211,7 +228,7 @@ extension VerticalLabel {
     }
 }
 
-extension VerticalLabel {
+public extension VerticalLabel {
     enum BreakingMode: Int {
         case truncate
         case wordWrap
@@ -235,7 +252,9 @@ extension VerticalLabel {
         case center
         case bottom
     }
-    
+}
+
+extension VerticalLabel {
     class Texter {
         var lines: [Line] = []
         
@@ -366,7 +385,7 @@ extension VerticalLabel {
         }
         return .init(origin: .zero, size: .init(width: w, height: h))
     }
-
+    
     var isLTR: Bool {
         return layoutDirection == .leftToRight
     }
@@ -440,6 +459,7 @@ extension VerticalLabel {
                 }
                 resetValues()
                 addWord(size: size)
+                maxW = size.width
             }
             else {
                 y -= size.height
@@ -456,3 +476,4 @@ extension VerticalLabel {
         }
     }
 }
+
