@@ -47,6 +47,11 @@ public class VerticalLabel: UIView {
             setNeedsUpdate()
         }
     }
+    public var attributedText: NSAttributedString? {
+        didSet{
+            setNeedsUpdate()
+        }
+    }
     @IBInspectable public lazy var textColor: UIColor = .black {
         didSet{
             setNeedsUpdate()
@@ -132,6 +137,9 @@ public class VerticalLabel: UIView {
         return view
     }()
     private var drawLabel: UILabel {
+        if let _ = attributedText {
+            return tmpLabel
+        }
         tmpLabel.font = font
         tmpLabel.textColor = textColor
         return tmpLabel
@@ -351,7 +359,17 @@ extension VerticalLabel {
 }
 
 extension VerticalLabel {
-    func setLabelAttrText(_ text: String) {
+    func setLabelAttrText(_ text: NSAttributedString) {
+        drawLabel.text = nil
+        drawLabel.attributedText = text
+    }
+    func labelAttrTextFittedSize(with text: NSAttributedString) -> CGSize {
+        setLabelAttrText(text)
+        let flexibleSize = CGSize(width: .zero, height: .max)
+        return drawLabel.sizeThatFits(flexibleSize)
+    }
+    
+    func setLabelText(_ text: String) {
         drawLabel.text = text
         guard let attrText = drawLabel.attributedText else {
             return
@@ -365,9 +383,8 @@ extension VerticalLabel {
         }
         drawLabel.attributedText = NSAttributedString(string: text, attributes: attrs)
     }
-    
-    func labelFittedSize(with text: String) -> CGSize {
-        setLabelAttrText(text)
+    func labelTextFittedSize(with text: String) -> CGSize {
+        setLabelText(text)
         let flexibleSize = CGSize(width: .zero, height: .max)
         return drawLabel.sizeThatFits(flexibleSize)
     }
@@ -450,6 +467,7 @@ extension VerticalLabel {
     }
     
     func calculating() {
+        let text = attributedText?.string ?? text
         guard let text = text else {
             return
         }
@@ -474,7 +492,7 @@ extension VerticalLabel {
                     var words = texter.lines.last?.words
                 {
                     words = words.dropLast(3)
-                    let size = labelFittedSize(with: ".")
+                    let size = labelTextFittedSize(with: ".")
                     let text = drawLabel.attributedText!
                     let breakings: [Texter.Word] = (0...2).map{_ in
                         .init(text: text, size: size)
@@ -506,7 +524,18 @@ extension VerticalLabel {
             }
             
             let str = String(char)
-            let size = labelFittedSize(with: str)
+            var size: CGSize = .zero
+            if let attrText = attributedText?.attributedSubstring(from: NSMakeRange(i, str.count)) {
+                size = labelAttrTextFittedSize(with: attrText)
+            }
+            else {
+                size = labelTextFittedSize(with: str)
+            }
+            
+            guard size != .zero else {
+                continue
+            }
+            
             if maxW < size.width {
                 maxW = size.width
             }

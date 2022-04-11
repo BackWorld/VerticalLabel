@@ -56,10 +56,25 @@ class ViewController: UIViewController {
 //        label.text = String(repeating: "Hello World! \n", count: 5)
 //        label.text = "东风夜放花千树，\n更吹落，星如雨。\n宝马雕车香满路，\n凤箫声动，玉壶光转，\n一夜鱼龙舞。\n\n\n\n\n蛾儿雪柳黄金缕，\n笑语盈盈暗香去。\n众里寻他千百度，\n蓦然回首，\n那人却在，灯火阑珊处。这是超出的文本这是超出的文本这是超出的文本这是超出的文本"
 //        label.text = "春有百花秋有月，\n夏有凉风冬有雪。\n若无闲事挂心头，\n便是人间好时节。"
-        label.text = """
-<p>丙辰中秋，欢饮达旦，大醉，作此篇，兼怀子由。</p>
-<p>明月几时有？把酒问青天。不知天上宫阙，今夕是何年。我欲乘风归去，又恐琼楼玉宇，高处不胜寒。起舞弄清影，何似在人间。<br />转朱阁，低绮户，照无眠。不应有恨，何事长向别时圆？人有悲欢离合，月有阴晴圆缺，此事古难全。但愿人长久，千里共婵娟。</p>
-""".replacingOccurrences(of: "<p>", with: "").replacingOccurrences(of: "</p>", with: "\n").replacingOccurrences(of: "<br />", with: "\n\n\n")
+
+        let attrText = NSMutableAttributedString(string: "春有百花秋有月，", attributes: [
+            .foregroundColor: UIColor.green,
+            .font: UIFont.huaWenLiShu(30)
+        ])
+        attrText.append(.init(string: "\n夏有凉风冬有雪。", attributes: [
+            .foregroundColor: UIColor.red,
+            .font: UIFont.fangZhengShuSong(30)
+        ]))
+        attrText.append(.init(string: "\n若无闲事挂心头，", attributes: [
+            .foregroundColor: UIColor.blue,
+            .font: UIFont.fangZhengShuSong(40)
+        ]))
+        attrText.append(.init(string: "\n便是人间好时节。", attributes: [
+            .foregroundColor: UIColor.black,
+            .font: UIFont.huaWenLiShu(40)
+        ]))
+        
+        label.attributedText = attrText
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -70,10 +85,10 @@ class ViewController: UIViewController {
 
 extension UIFont {
     static func fangZhengShuSong(_ size: CGFloat) -> UIFont {
-        return .init(name: "FZShuSong-Z01S", size: 24)!
+        return .init(name: "FZShuSong-Z01S", size: size)!
     }
     static func huaWenLiShu(_ size: CGFloat) -> UIFont {
-        return .init(name: "STLiti", size: 24)!
+        return .init(name: "STLiti", size: size)!
     }
 }
 
