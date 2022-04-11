@@ -10,6 +10,8 @@ import UIKit
 public class VerticalLabel: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
+        
+        setupViews()
         setNeedsUpdate()
     }
     required init?(coder: NSCoder) {
@@ -17,13 +19,29 @@ public class VerticalLabel: UIView {
     }
     public override func awakeFromNib() {
         super.awakeFromNib()
+        
+        setupViews()
         setNeedsUpdate()
     }
     
-    var contentSize: CGSize {
-        return bounds.size
+    lazy var scrollView: UIScrollView = {
+        let sc = UIScrollView()
+        sc.addSubview(textsView)
+//        sc.bounces = false
+        sc.contentInset = .zero
+        sc.contentOffset = .zero
+        return sc
+    }()
+    
+    func setupViews() {
+        addSubview(scrollView)
     }
     
+    @IBInspectable public var containerSize: CGSize = .zero {
+        didSet{
+            setNeedsUpdate()
+        }
+    }
     @IBInspectable public var text: String? {
         didSet{
             setNeedsUpdate()
@@ -111,7 +129,6 @@ public class VerticalLabel: UIView {
     }()
     private lazy var textsView: TextsView = {
         let view = TextsView()
-        addSubview(view)
         return view
     }()
     private var drawLabel: UILabel {
@@ -123,6 +140,7 @@ public class VerticalLabel: UIView {
     public override func layoutSubviews() {
         super.layoutSubviews()
         
+        scrollView.frame = bounds
         setNeedsUpdate()
     }
 }
@@ -189,6 +207,34 @@ public extension VerticalLabel {
     func setNeedsUpdate() {
         calculating()
         drawingTexts()
+    }
+}
+
+extension VerticalLabel {
+    public var contentSize: CGSize {
+        return textsArea.size
+    }
+    
+    var _containerSize: CGSize {
+        var w = containerSize.width
+        var h = containerSize.height
+        if w.isZero, h.isZero {
+            return bounds.size
+        }
+        switch w {
+        case -1: w = .infinity
+        case 0: w = bounds.width
+        default: break
+        }
+        switch h {
+        case -1: h = .infinity
+        case 0: h = bounds.height
+        default: break
+        }
+        if w.isInfinite, h.isInfinite {
+            h = bounds.height
+        }
+        return .init(width: w, height: h)
     }
 }
 
@@ -341,35 +387,48 @@ extension VerticalLabel {
         }
     }
     
-    func drawingTexts() {
+    var originUpdatedTextsArea: CGRect {
         var area = textsArea
-        
         switch (xPosition, yPosition) {
         case (.left, .top):
             area.origin = .zero
         case (.left, .center):
-            area.origin.y = (contentSize.height - area.size.height)/2
+            area.origin.y = (bounds.height - area.size.height)/2
         case (.left, .bottom):
-            area.origin.y = contentSize.height - area.size.height
+            area.origin.y = bounds.height - area.size.height
             
         case (.right, .top):
-            area.origin.x = contentSize.width - area.size.width
+            area.origin.x = bounds.width - area.size.width
         case (.right, .center):
-            area.origin.x = contentSize.width - area.size.width
-            area.origin.y = (contentSize.height - area.size.height)/2
+            area.origin.x = bounds.width - area.size.width
+            area.origin.y = (bounds.height - area.size.height)/2
         case (.right, .bottom):
-            area.origin.x = contentSize.width - area.size.width
-            area.origin.y = contentSize.height - area.size.height
+            area.origin.x = bounds.width - area.size.width
+            area.origin.y = bounds.height - area.size.height
             
         case (.center, .top):
-            area.origin.x = (contentSize.width - area.size.width) / 2
+            area.origin.x = (bounds.width - area.size.width) / 2
         case (.center, .center):
-            area.origin.x = (contentSize.width - area.size.width) / 2
-            area.origin.y = (contentSize.height - area.size.height)/2
+            area.origin.x = (bounds.width - area.size.width) / 2
+            area.origin.y = (bounds.height - area.size.height)/2
         case (.center, .bottom):
-            area.origin.x = (contentSize.width - area.size.width) / 2
-            area.origin.y = contentSize.height - area.size.height
+            area.origin.x = (bounds.width - area.size.width) / 2
+            area.origin.y = bounds.height - area.size.height
         }
+        return area
+    }
+    
+    func drawingTexts() {
+        var area = originUpdatedTextsArea
+        scrollView.contentSize = contentSize
+        
+        if _containerSize.width.isInfinite {
+            area.origin.x = .zero
+            if layoutDirection == .rightToLeft {
+                scrollView.contentOffset = .init(x: contentSize.width - bounds.size.width, y: 0)
+            }
+        }
+        
         textsView.backgroundColor = .clear
         textsView.frame = area
         textsView.characters = characters
@@ -410,7 +469,7 @@ extension VerticalLabel {
         
         func addNewLineIfNeeded() -> Bool {
             x += (maxW + lineSpacing)
-            if x > contentSize.width {
+            if x > _containerSize.width {
                 if  breaking == .truncate,
                     var words = texter.lines.last?.words
                 {
@@ -453,7 +512,7 @@ extension VerticalLabel {
             }
             
             y += size.height
-            if y > contentSize.height {
+            if y > _containerSize.height {
                 if !addNewLineIfNeeded() {
                     break
                 }
