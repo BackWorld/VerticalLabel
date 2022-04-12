@@ -116,7 +116,12 @@ public class VerticalLabel: UIView {
             setNeedsUpdate()
         }
     }
-    public var lineAlignment: LineAlignment = .top {
+    public var lineYAlignment: LineYAlignment = .top {
+        didSet{
+            setNeedsUpdate()
+        }
+    }
+    public var lineXAlignment: LineXAlignment = .center {
         didSet{
             setNeedsUpdate()
         }
@@ -198,15 +203,26 @@ public extension VerticalLabel {
             return yPosition.rawValue
         }
     }
-    @IBInspectable var lineAlign: Int {
+    @IBInspectable var lineXAlign: Int {
         set{
-            guard let value = LineAlignment(rawValue: newValue) else {
+            guard let value = LineXAlignment(rawValue: newValue) else {
                 return
             }
-            lineAlignment = value
+            lineXAlignment = value
         }
         get {
-            return lineAlignment.rawValue
+            return lineXAlignment.rawValue
+        }
+    }
+    @IBInspectable var lineYAlign: Int {
+        set{
+            guard let value = LineYAlignment(rawValue: newValue) else {
+                return
+            }
+            lineYAlignment = value
+        }
+        get {
+            return lineYAlignment.rawValue
         }
     }
 }
@@ -248,33 +264,44 @@ extension VerticalLabel {
 
 extension VerticalLabel {
     var characters: [Character] {
-        guard let firstLine = texter.lines.first else {
+        guard !texter.lines.isEmpty else {
             return []
         }
-        var x: CGFloat = isLTR ? 0 : (textsArea.maxX - firstLine.maxWidth)
-        var yBase: CGFloat = 0
-        var y: CGFloat = 0
         
         let area = textsArea
+        var xBase: CGFloat = isLTR ? 0 : area.width-lineSpacing
+        var yBase: CGFloat = 0
+        var x: CGFloat = 0
+        var y: CGFloat = 0
         
         var list: [Character] = []
         
         for line in texter.lines {
-            switch lineAlignment {
+            let W = line.maxWidth
+            switch lineYAlignment {
             case .top: yBase = 0
             case .center: yBase = (area.height - line.height) / 2
             case .bottom: yBase = area.height - line.height
             }
             y = yBase
+            
+            if !isLTR {
+                xBase -= W
+            }
             for word in line.words {
+                switch lineXAlignment {
+                case .left: x = xBase
+                case .center: x = xBase + (W - word.size.width) / 2
+                case .right: x = xBase + (W - word.size.width)
+                }
                 list.append(.init(text: word.text, frame: .init(origin: .init(x: x, y: y), size: word.size)))
                 y += word.size.height
             }
             if isLTR {
-                x += (line.maxWidth + lineSpacing)
+                xBase += (W + lineSpacing)
             }
             else {
-                x -= (line.maxWidth + lineSpacing)
+                xBase -= lineSpacing
             }
         }
         
@@ -301,10 +328,15 @@ public extension VerticalLabel {
         case center
         case bottom
     }
-    enum LineAlignment: Int {
+    enum LineYAlignment: Int {
         case top
         case center
         case bottom
+    }
+    enum LineXAlignment: Int {
+        case left
+        case center
+        case right
     }
 }
 
@@ -439,10 +471,10 @@ extension VerticalLabel {
         var area = originUpdatedTextsArea
         scrollView.contentSize = contentSize
         
-        if _containerSize.width.isInfinite {
+        if _containerSize.width.isInfinite, contentSize.width > bounds.width {
             area.origin.x = .zero
             if layoutDirection == .rightToLeft {
-                scrollView.contentOffset = .init(x: contentSize.width - bounds.size.width, y: 0)
+                scrollView.contentOffset = .init(x: contentSize.width - bounds.width, y: 0)
             }
         }
         
@@ -453,7 +485,10 @@ extension VerticalLabel {
     
     var textsArea: CGRect {
         let lines = texter.lines
-        let w = lines.reduce(0){ $0 + $1.maxWidth + lineSpacing } - lineSpacing
+        guard !lines.isEmpty else {
+            return .zero
+        }
+        let w = lines.reduce(0){ $0 + $1.maxWidth + lineSpacing }
         let heights = lines.map{ $0.height }
         guard
             let h = heights.max(by: { $0 <= $1 }) else {
@@ -508,13 +543,15 @@ extension VerticalLabel {
             }
             return true
         }
+        
         func addWord(size: CGSize){
             words.append(.init(text: drawLabel.attributedText!, size: size))
         }
         
-        for (i,char) in text.enumerated()
+        for (i, char) in text.enumerated()
         {
             isChangedLine = false
+            
             if char.isNewline {
                 if !addNewLineIfNeeded() {
                     break
